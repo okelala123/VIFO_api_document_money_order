@@ -1,5 +1,5 @@
 {
-    "name": "api_vifo/vf_api_transfer_money_order",
+    "name": "vifo/vf_api_transfer_money_order",
     "type": "library",
     "license": "MIT",
     "autoload": {
