@@ -1,11 +1,8 @@
 <?php
+
 namespace App\Services;
 
 use GuzzleHttp\Client;
-use GuzzleHttp\HandlerStack;
-use Namshi\Cuzzle\Middleware\CurlFormatterMiddleware;
-use Monolog\Logger;
-use Monolog\Handler\TestHandler;
 use GuzzleHttp\Exception\RequestException;
 
 class VifoSendRequest
@@ -23,35 +20,27 @@ class VifoSendRequest
         } else {
             $this->baseUrl = 'https://api.vifo.vn';
         }
-        // Khởi tạo logger
-        $this->logger = new Logger('guzzle.to.curl');
-        $this->testHandler = new TestHandler();
-        $this->logger->pushHandler($this->testHandler);
-
-        // Cài đặt handler stack với CurlFormatterMiddleware
-        $handler = HandlerStack::create();
-        $handler->after('cookies', new CurlFormatterMiddleware($this->logger));
-
-        // Khởi tạo client Guzzle với handler
-        $this->client = new Client(['handler' => $handler]);
+     
+        $this->client = new Client();
     }
 
     public function sendRequest($method, $endpoint, $headers, $body)
     {
         $baseUrl = $this->baseUrl . $endpoint;
+        $result = []; 
         try {
             $response = $this->client->request($method, $baseUrl, [
                 'headers' => $headers,
                 'json' => $body
             ]);
-            $json = json_decode($response->getBody(), true);
-            echo "Status Code: " . $response->getStatusCode() . "<br/>";
-            echo "Response Body: " . $response->getBody() . "<br/>";
+            
+            $json = json_decode($response->getBody()->getContents(), true);
+            $result['status_code'] = $response->getStatusCode();
+            $result['body'] = $json;
         } catch (RequestException $e) {
-            echo "Request failed: " . $e->getMessage() . "<br/>";
-            echo "Response Body: " . $e->getResponse()->getBody() . "<br/>";
-            var_dump($this->testHandler->getRecords()) . "<br/>";
+            $result['error'] = $e->getMessage();
+            $result['body'] = $e->getResponse() ? $e->getResponse()->getBody()->getContents() : null;
         }
-        return isset($json) ? $json : [];
+        return $result; 
     }
 }

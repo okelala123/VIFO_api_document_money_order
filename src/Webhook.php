@@ -1,19 +1,55 @@
 <?php
+
 namespace App\Services;
 
 class Webhook
 {
-    public function handle($data, $requestSignature, $signature)
+    private function validate($secretKey, $timestamp, $body)
     {
-        $data = json_decode($data, true);
+        if (empty($secretKey) || !is_string($secretKey)) {
+            return ['error' => 'Invalid secret key'];
+        }
 
-        if ($signature !== $requestSignature) {
-            return "no";
+        if (empty($timestamp)) {
+            return ['error' => 'Invalid timestamp'];
+        }
+
+        if (empty($body) || !is_array($body)) {
+            return ['error' => 'Invalid body'];
+        }
+
+        return true;
+    }
+
+    private function createSignature($body, $secretKey, $timestamp)
+    {
+        ksort($body);
+        $payload = json_encode($body);
+        $signatureString = $timestamp . $payload;
+
+        return hash_hmac('sha256', $signatureString, $secretKey);
+    }
+
+    public function handle($data, $requestSignature, $secretKey, $timestamp)
+    {
+        if (is_object($data)) {
+            $data = (array) $data;
         } else {
-            return "yes";
+            $data = json_decode($data, true);
+        }
+
+        $validationResult = $this->validate($secretKey, $timestamp, $data);
+
+        if ($validationResult !== true) {
+            return $validationResult;
+        }
+
+        $generatedSignature = $this->createSignature($data, $secretKey, $timestamp);
+
+        if ($requestSignature == $generatedSignature) {
+            return true;
+        } else {
+            return false;
         }
     }
 }
-
-
-

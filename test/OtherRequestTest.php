@@ -21,7 +21,7 @@ class OtherRequestTest extends TestCase
     {
         $data = [
             'data' => [
-                'order_number' => 'asdad'
+                'order_number' => 'XHS190HXnXXX'
             ]
         ];
         $response = $this->other->checkOrderStatus($data);

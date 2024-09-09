@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Services;
 
 class VifoApproveTransferMoney
@@ -12,6 +13,23 @@ class VifoApproveTransferMoney
         $this->sendRequest = new VifoSendRequest();
     }
 
+    private function validateApproveTransfersInput($secretKey, $timestamp, $body)
+    {
+        if (empty($secretKey) || !is_string($secretKey)) {
+            return ['error' => 'Invalid secret key'];
+        }
+
+        if (empty($timestamp)) {
+            return ['error' => 'Invalid timestamp'];
+        }
+
+        if (empty($body)) {
+            return ['error' => 'Invalid body'];
+        }
+
+        return true;
+    }
+
     private function createSignature($body, $secretKey, $timestamp)
     {
         ksort($body);
@@ -21,16 +39,15 @@ class VifoApproveTransferMoney
         return hash_hmac('sha256', $signatureString, $secretKey);
     }
 
-    public function approveTransfers($data)
+    public function approveTransfers($secretKey, $timestamp, $body)
     {
-        $endpoint = '/v2/finance/confirm';
-        $timestamp = date('Y-m-d H:i:s');
-        $secretKey = 'Uz7xYpuH0DFcET8NZ9egdhCujJzJvYl2';
+        $validation = $this->validateApproveTransfersInput($secretKey, $timestamp, $body);
 
-        $body = [
-            "status" => 6,
-            "ids" => [$data['data']['id']]
-        ];
+        if ($validation !== true) {
+            return $validation;
+        }
+
+        $endpoint = '/v2/finance/confirm';
 
         $requestSignature = $this->createSignature($body, $secretKey, $timestamp);
 
